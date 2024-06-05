@@ -1,3 +1,3 @@
-module example/hello
+module codewars
 
 go 1.22.1
