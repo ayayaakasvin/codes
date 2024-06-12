@@ -6,6 +6,10 @@ import (
 
 type Square struct {
 	Length int
+	Top *Square
+	Bottom *Square
+	Left *Square
+	Right *Square
 }
 
 func (s Square) DrawTheSquare () {
@@ -14,4 +18,8 @@ func (s Square) DrawTheSquare () {
 			stringMultiplicationHorizontal(s.Length, true);
 
 	fmt.Println(drawing)
+}
+
+type Triangle struct {
+	//pass
 }
