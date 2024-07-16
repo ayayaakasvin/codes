@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"os/exec"
 	"proj/dbplus"
 	"proj/password"
 	"runtime"
-	"time"
+	// "time"
 )
 
 func clearTerminal() {
@@ -39,11 +39,11 @@ func main () {
 
 	database.INSERT_INTO(string(password.PasswordItself))
 
-	for i := 5; i > 0 ; i-- {
-		fmt.Printf("Terminal will be cleared out after: %v second\n", i)
-		time.Sleep(1 * time.Second)
-	}
-	clearTerminal()
+	// for i := 5; i > 0 ; i-- {
+	// 	fmt.Printf("Terminal will be cleared out after: %v second\n", i)
+	// 	time.Sleep(1 * time.Second)
+	// }
+	// clearTerminal()
 
-	main()
+	// main()
 }

@@ -65,7 +65,7 @@ func (password *PasswordStruct) durakCheck () {
 	}
 
 	if !typeExistenceCheck {
-		fmt.Printf("No symbol chosen, try again...")
+		fmt.Printf("No symbol chosen, try again...\n")
 		PasswordCreate()
 	}
 }

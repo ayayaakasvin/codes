@@ -1,10 +1,18 @@
 package leetcode
 
 import "strconv"
+import "fmt"
 
 type ListNode struct {
     Val int
     Next *ListNode
+}
+
+func (Node *ListNode) Display () {
+	var current *ListNode = Node
+	for ;current != nil ; {
+		fmt.Printf("%d -> ", current.Val)
+	}
 }
 
 
