@@ -1,6 +1,6 @@
 package leetcode
 
-func mapOfAppereance (nums []int) map[int]int {
+func getMapOfAppereance (nums []int) map[int]int {
 	var mapOfAppereance map[int]int = map[int]int{}
 	
 	for _, value := range nums {
@@ -11,7 +11,7 @@ func mapOfAppereance (nums []int) map[int]int {
 }
 
 func singleNumber(nums []int) int {
-    var appereanceOfInts map[int]int = mapOfAppereance(nums)
+    var appereanceOfInts map[int]int = getMapOfAppereance(nums)
 
 	for key, value := range appereanceOfInts {
 		if value == 1 {

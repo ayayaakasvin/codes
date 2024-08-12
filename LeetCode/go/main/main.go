@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	fmt.Println(leetcode.ConvertToTitle(1), "A")
-	fmt.Println(leetcode.ConvertToTitle(28), "AB")
-	fmt.Println(leetcode.ConvertToTitle(701), "ZY")
+	fmt.Println(leetcode.AddStrings("11", "123"), 134)
+	fmt.Println(leetcode.AddStrings("456", "77"), 533)
+	fmt.Println(leetcode.AddStrings("0", "0"), 0)
 }
