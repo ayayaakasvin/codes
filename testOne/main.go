@@ -16,7 +16,7 @@ var database *packages.DataBaseProps
 
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*.html"))
-	tickerTime = time.NewTicker(3 * time.Second)
+	tickerTime = time.NewTicker(5 * time.Second)
 	channelForTicker = make(chan bool)
 
 	var err error
@@ -52,30 +52,31 @@ func login (w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func hello (w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func hello(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "POST" {
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
 
-	var form *packages.FormStruct = packages.NewForm(r.FormValue("uname"), r.FormValue("pword"))
+    form := packages.NewForm(r.FormValue("uname"), r.FormValue("pword"))
 
-	ok, err := database.CheckUserNameAndPassword(form.Username, form.Password)
+    ok, err := database.CheckUserNameAndPassword(form.Username, form.Password)
+    if err != nil {
+        fmt.Printf("Failed to check user(%s): %v\n", form.Username, err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		fmt.Printf("Failed to check user: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	} 
-	
-	if ok {
-		if err := tpl.ExecuteTemplate(w, "hello.html", form); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	} else {
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
-	}
-
+    if ok {
+		fmt.Printf("User(%s) authentification is successful\n", form.Username)
+        if err := tpl.ExecuteTemplate(w, "hello.html", form); err != nil {
+			fmt.Printf("Error executing template: %v", err)
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
+    } else {
+		fmt.Printf("Authentication failed for user %s\n", form.Username)
+        http.Redirect(w, r, "/", http.StatusUnauthorized)
+    }
 }
 
 func register (w http.ResponseWriter, r *http.Request) {
@@ -91,19 +92,35 @@ func registerProcess (w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user *packages.FormStruct = packages.NewForm(r.FormValue("uname"), r.FormValue("pword"))
+	var user *packages.RegisterForm = packages.NewRegisterForm(r.FormValue("uname"), r.FormValue("pword"),  r.FormValue("re-pword"))
 
-	err := database.CreateNewUser(user.Username, user.Password)
+	if user.Password != user.Re_Password {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	exists, err := database.DoesUserExist(user.Username)
+
 	if err != nil {
-		fmt.Printf("Failed to create user %v,\nError: %v", user.Username, err)
+		fmt.Printf("Failed to check user(%s): %v", user.Username, err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	err = tpl.ExecuteTemplate(w, "login.html", nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if exists {
+		fmt.Printf("User(%s) already exists\n", user.Username)
+		http.Error(w, "User already exists", http.StatusConflict)
+		return
 	}
+	
+	err = database.CreateNewUser(user.Username, user.Password)
+	if err != nil {
+		fmt.Printf("Failed to create user %v,\nError: %v\n", user.Username, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func ThreeSecondTicker () {

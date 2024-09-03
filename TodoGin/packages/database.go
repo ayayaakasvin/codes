@@ -13,6 +13,12 @@ const (
 	tableName = "todouserpasswords"
 	tableUsername = "Username"
 	tableHashedPassword = "HashedPassword"
+	tableID = "id"
+	tasksTableName = "tasks"
+	tasksDescription = "description"
+	tasksIsCompleted = "is_completed"
+	tasksUserID = "user_id"
+	tasksID = "id"
 )
 
 // FormStruct represents html form POST struct 
@@ -46,6 +52,22 @@ type DataBaseProps struct {
 	Connection   *sql.DB
 }
 
+// Define a struct to return user ID and authentication status
+type AuthResult struct {
+	UserID int
+	IsAuthenticated bool
+}
+
+type Task struct {
+	Description string
+	ID int
+}
+
+type ToDoPassStruct struct {
+	Tasks  []Task
+	UserID int
+}
+
 // NewForm return FormStruct struct
 func NewForm (username, password string) *FormStruct {
 	return &FormStruct{
@@ -62,7 +84,6 @@ func NewRegisterForm (username, password, re_password string) *RegisterForm {
 		Re_Password: re_password,
 	}
 }
-
 
 // NewDatabaseConnection creates a new database connection and returns DataBaseProps and an error if there is an issue
 func NewDatabaseConnection(databaseName, host, port, user, password string) (*DataBaseProps, error) {
@@ -199,29 +220,34 @@ func (head *RowOfDatabase) DisplayData () (int64) {
 	return printedCounter
 }
 
-//CheckUserNameAndPassword checks if a username and hashed password combination exists in the database
-func (database *DataBaseProps) CheckUserNameAndPassword (Username string, Password string) (bool, error) {
+// CheckUserNameAndPassword checks if a username and hashed password combination exists in the database
+func (database *DataBaseProps) CheckUserNameAndPassword(Username string, Password string) (AuthResult, error) {
 	if database == nil || database.Connection == nil {
-		return false, fmt.Errorf("database connection is nil")
+		return AuthResult{}, fmt.Errorf("database connection is nil")
 	}
 
-	var scriptToFindUser string = fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1 LIMIT 1", tableHashedPassword, tableName, tableUsername)
+	var (
+		storedHashPassword string
+		userID             int
+	)
+
+	// Update the query to select both the hashed password and user ID
+	scriptToFindUser := fmt.Sprintf("SELECT %s, %s FROM %s WHERE %s = $1 LIMIT 1", tableHashedPassword, tableID, tableName, tableUsername)
 	row := database.Connection.QueryRow(scriptToFindUser, Username)
 	
-	var storedHashPassword string
-	err := row.Scan(&storedHashPassword)
+	err := row.Scan(&storedHashPassword, &userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil
+			return AuthResult{}, nil // No rows means user not found
 		}
-		return false, err
+		return AuthResult{}, err
 	}
 
 	if ComparePassword(Password, storedHashPassword) {
-		return true, nil
+		return AuthResult{UserID: userID, IsAuthenticated: true}, nil
 	}
 
-	return false, nil
+	return AuthResult{IsAuthenticated: false}, nil
 }
 
 func (database *DataBaseProps) DoesUserExist (Username string) (bool, error) {
@@ -262,5 +288,77 @@ func (database *DataBaseProps) CreateNewUser (Username, Password string) error {
 	}
 
 	fmt.Printf("User %s has been successfully created\n", Username)
+	return nil
+}
+
+func (database *DataBaseProps) GetUsername(userID int) (string, error) {
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1 LIMIT 1", tableUsername, tableName, tableID)
+
+	var result string
+	err := database.Connection.QueryRow(query, userID).Scan(&result)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no user found with ID %d", userID)
+		}
+		return "", fmt.Errorf("failed to retrieve username: %v", err)
+	}
+
+	return result, nil
+}
+
+
+func (database *DataBaseProps) AddTask (userID int, task string) error {
+	query := fmt.Sprintf(`INSERT INTO %s (%s, %s) VALUES ($1, $2)`, tasksTableName, tasksUserID, tasksDescription)
+
+	_, err := database.Connection.Exec(query, userID, task)
+	if err != nil {
+		return fmt.Errorf("insert into error : %v", err)
+	}
+
+	return nil
+}
+
+func (database *DataBaseProps) GetTasksFromDatabase (userID int) ([]Task, error) {
+	if database == nil || database.Connection == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+
+	var query string = fmt.Sprintf("SELECT %s, %s FROM %s WHERE %s = $1", tasksDescription, tasksID, tasksTableName, tasksUserID)
+	rows, err := database.Connection.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("row query error : %v", err)
+	}
+	defer rows.Close()
+
+	var result []Task = []Task{}
+
+	for rows.Next() {
+		var description string
+		var id int
+		if err := rows.Scan(&description, &id); err != nil {
+			return nil, fmt.Errorf("row scan error: %v", err)
+		}
+
+		result = append(result, Task{ID: id, Description: description})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %v", err)
+	}
+
+	return result, nil
+}
+
+func (database *DataBaseProps) DeleteTask(userID int, taskID int) error {
+	if database == nil || database.Connection == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = $1 AND %s = $2", tasksTableName, tasksUserID, tasksID)
+	_, err := database.Connection.Exec(query, userID, taskID)
+	if err != nil {
+		return fmt.Errorf("row delete error: %v", err)
+	}
+
 	return nil
 }

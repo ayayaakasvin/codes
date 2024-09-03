@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo</title>
+    <link rel="stylesheet" href="todoStyle.css">
+    <!-- <script src="/static/todoJS.js"></script> -->
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="username-container">
+            <span class="username">{{ .Username }}</span>
+        </div>
+        <a href="/login" class="logout-btn">Logout</a>
+    </div>
+    
+
+    <div id="myDIV" class="header">
+        <h2>My To Do List</h2>
+        <form action="/addTask/{{ .tasks.UserID }}" method="POST">
+            <input type="text" id="myInput" name="taskTitle" placeholder="Title...">
+            <button type="submit" class="addBtn">Add</button>
+        </form>
+    </div>
+      
+    {{ if .tasks.Tasks }} 
+    <ul id="myUL">
+        {{ range $index, $task := .tasks.Tasks }}
+        <li>
+            {{ $task.Description }}
+            <form method="POST" action="/deleteTask/{{ $.tasks.UserID }}">
+                <input type="hidden" name="taskID" value="{{ $task.ID }}">
+                <button type="submit" class="close" aria-label="Delete task"> X</button>
+            </form>            
+        </li>
+        {{ end }}
+    </ul>
+    {{ else }}
+        <p class="NoTasks">You have no tasks</p>
+    {{ end }}
+</body>
+</html>
