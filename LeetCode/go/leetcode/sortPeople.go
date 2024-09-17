@@ -8,7 +8,7 @@ func sortPeople(names []string, heights []int) []string {
 			if heights[i] < heights[j] {
 				heights[i], heights[j] = heights[j], heights[i]
 				names[i], names[j] = names[j], names[i]
-			} else
+			} else {}
 		}
 	}
 
